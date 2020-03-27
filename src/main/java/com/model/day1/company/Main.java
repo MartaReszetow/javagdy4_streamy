@@ -498,13 +498,14 @@ public class Main {
 // 17. Wypisz ile łącznie kawy (Arabica i Roubsta) zostało kupionej w dni parzyste.
         company_17_arabica_robusta_even(companies);
 // 18. Zwróć Mapę (Map<Product, Set<Company>>) w której kluczem jest typ kawy (powinny być dwie, Arabica i Robusta) i wartością są listy firm które kupiły podaną kawę chociaż raz.
-        //    company_18_mapa_kaw(companies);
+        Map<Product, Set<Company>> productSetMap = company_18_mapa_kaw(companies);
+        System.out.println(productSetMap);
 // 19. Zwróć firmę która w styczniu kupiła najwięcej paliwa (ropy)
-//        company_19_most_oil_january(companies);
+        company_19_most_oil_january(companies);
 // 20. Zwróć firmę której proporcja wydanych pieniędzy do ilości pracowników jest najwyższa
-//        company_20_money_vs_employees(companies);
+        company_20_money_vs_employees(companies);
 // 21. Zwróć firmę która najwięcej wydaje na artykuły biurowe
-//        company_21_most_sheeets(companies);
+        company_21_most_sheeets(companies);
 // 22. Zwróć firmy posortowane po ilości wydanych pieniędzy na paliwo
 //        company_22_sort_money(companies);
 // 23. Zwróć wszystkie produkty które kupione były na kilogramy
@@ -755,7 +756,6 @@ public class Main {
                     return Double.compare(coffeePurchaseCompany1, coffeePurchaseCompany2);
                 });
         maxCoffeeCompany.ifPresent(System.out::println);
-
     }
 
     // 16. Wypisz ile łącznie zostało kupionej kawy Arabica w miesiącu styczniu
@@ -765,28 +765,96 @@ public class Main {
         double sumOfCoffee = companies.stream()
                 .flatMap(c -> c.getPurchaseList().stream()
                         .filter(purchase -> purchase.getProduct().getName().contains("Arabica") && purchase.getPurchaseDate().getMonth().getValue() == 1))
-                        .mapToDouble(Purchase::getQuantity)
-                        .sum();
+                .mapToDouble(Purchase::getQuantity)
+                .sum();
         System.out.println("suma kawy kupionej w styczniu to: " + sumOfCoffee + "kg");
     }
 
-
-
     // 17. Wypisz ile łącznie kawy (Arabica i Roubsta) zostało kupionej w dni parzyste.
-    private static void company_17_arabica_robusta_even (List<Company> companies) {
-
-    double evenDaysPurchasedCoffee =
-            companies.stream()
-            .flatMap(company -> company.getPurchaseList().stream()
-                    .filter(purchase -> purchase.getProduct().getName().contains("Coffee")&&(purchase.getPurchaseDate().getDayOfMonth())%2==0))
-            .mapToDouble(Purchase::getQuantity)
-            .sum();
+    private static void company_17_arabica_robusta_even(List<Company> companies) {
+        System.out.println("Zad.17");
+        double evenDaysPurchasedCoffee =
+                companies.stream()
+                        .flatMap(company -> company.getPurchaseList().stream()
+                                .filter(purchase -> purchase.getProduct().getName().contains("Coffee") && (purchase.getPurchaseDate().getDayOfMonth()) % 2 == 0))
+                        .mapToDouble(Purchase::getQuantity)
+                        .sum();
         System.out.println("w dni parzyste kupiono: " + evenDaysPurchasedCoffee + "kg kawy");
+    }
 
+    // 18. Zwróć Mapę (Map<Product, Set<Company>>) w której kluczem jest typ kawy (powinny być dwie, Arabica i Robusta)
+    // i wartością są listy firm które kupiły podaną kawę chociaż raz.
+    private static Map<Product, Set<Company>> company_18_mapa_kaw(List<Company> companies) {
+        System.out.println("Zad.18");
+        // tworzę listę PRODUKTOW - posiadających w nazwie "Coffee"
+        List<Product> listofCoffees = companies.stream()
+                .map(Company::getPurchaseList)              // przechodzę z list firm na liste zakupów
+                .flatMap(purchases -> purchases.stream()    // wrzucam wszystkie zakupy do jednego worka
+                        .map(Purchase::getProduct)          // przechdozę z porównywania zakópów na porównywanie produnktów (nie intersuje mnie np. ile ich kupiono)
+                        .filter(product -> product.getName().contains("Coffee")))
+                .collect(Collectors.toList());
+
+        return listofCoffees.stream().collect(Collectors.toMap(     // wychodzę z listy produktów
+                typeOfCoffee -> typeOfCoffee,                       // kluczem są produkty same w sobie
+                typeOfCoffee -> companies.stream()                  // jako warości chcę formy więc z kluczy przechodzę z powrotem na listę firm
+                        .filter(company -> company.getPurchaseList().stream()       // filtruję te firmy które w zakupach...
+                                .anyMatch(purchase -> purchase.getProduct() == typeOfCoffee))   // mają dgdziekolwiek (ANYMATCH) któryś z prokuktów które mamy jako klucze
+                        .collect(Collectors.toSet()),               // wrzucam te firmy na stos
+                (company1, company2) -> {                           // jeżeli mam kilka takich camych firm - dorzucam do stosu (i tak powtórzenia się usuną)
+                    Set<Company> companiesSet = new HashSet<>(company1);
+                    companiesSet.addAll(company2);
+                    return companiesSet;
+                }
+        ));
+    }
+
+    // 19. Zwróć firmę która w styczniu kupiła najwięcej paliwa (ropy)
+    private static void company_19_most_oil_january(List<Company> companies) {
+
+        // fuel oil
+        System.out.println("Zad.19");
+        Optional<Company> maxOilJanuary = companies
+                .stream()
+                .max((o1, o2) -> {
+                    double oilAmountO1 = o1.getPurchaseList().stream()
+                            .filter(purchase -> purchase.getProduct().getName().equalsIgnoreCase("Fuel, oil")
+                                    && purchase.getPurchaseDate().getMonth().getValue() == 1).mapToDouble(Purchase::getQuantity).sum();
+                    double oilAmountO2 = o2.getPurchaseList().stream()
+                            .filter(purchase -> purchase.getProduct().getName().equalsIgnoreCase("Fuel, oil")
+                                    && purchase.getPurchaseDate().getMonth().getValue() == 1).mapToDouble(Purchase::getQuantity).sum();
+
+                    return Double.compare(oilAmountO1, oilAmountO2);
+                });
+
+        maxOilJanuary.ifPresent(System.out::println);
+    }
+
+    // 20. Zwróć firmę której proporcja wydanych pieniędzy do ilości pracowników jest najwyższa
+    private static void company_20_money_vs_employees(List<Company> companies) {
+        // wydana kasa/ilosc pracownikow = max
+        System.out.println("Zad.20");
+        Optional<Company> maxMoneyVsEmployees = companies.stream()
+                .max(Comparator.comparingDouble(c -> c.getPurchaseList()
+                        .stream()
+                        .mapToDouble(purchase -> purchase.getQuantity() * purchase.getProduct().getPrice()).sum() / c.getEmployees()));
+
+        maxMoneyVsEmployees.ifPresent(System.out::println);
     }
 
 
+    // 21. Zwróć firmę która najwięcej wydaje na artykuły biurowe
+    private static void company_21_most_sheeets(List<Company> companies){
+        System.out.println("Zad.21");
 
+        List<String> officeArticles = Arrays.asList("Pen","Pencil","Clip","Puncher","Paper","Scisors");
+        Optional<Company> maxOfficeArticlesCompany = companies.stream()
+                .max(Comparator.comparingDouble(comp->comp.getPurchaseList().stream()
+                        .filter(product->officeArticles.contains(product.getProduct().getName()))
+                        .mapToDouble(product-> product.getProduct().getPrice()*product.getQuantity()).sum()
+                ));
+        maxOfficeArticlesCompany.ifPresent(System.out::println);
+
+    }
 
 
     // 27. *Wypisz "Nazwa firmy: XYZ, ilość zakupionych telefonów apple: X"
