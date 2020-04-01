@@ -507,15 +507,15 @@ public class Main {
 // 21. Zwróć firmę która najwięcej wydaje na artykuły biurowe
         company_21_most_sheeets(companies);
 // 22. Zwróć firmy posortowane po ilości wydanych pieniędzy na paliwo
-//        company_22_sort_money(companies);
+        company_22_sort_money(companies);
 // 23. Zwróć wszystkie produkty które kupione były na kilogramy
-//        company_23_wszystkie_produkty_na_kilogramy(companies);
+        company_23_wszystkie_produkty_na_kilogramy(companies);
 // 24. Zwróć listę zakupów (obiektów purchase) kupionych przez firmy z Detroit w miesiącu lutym. posortuj je po kwocie.
-//        company_24_detroit_shopping_in_february(companies);
+        company_24_detroit_shopping_in_february(companies);
 // 25. Zwróć ilość biur które wynajęte były w miesiącu lutym.
-//        company_25_rent_in_february(companies);
+        company_25_rent_in_february(companies);
 // 26. Zwróć Mapę (Map<Company, Integer>). w mapie umieść wpisy Firma - > ilość biur które wynajęły w dowolnym okresie.
-        //     company_26_company_and_offices(companies);
+   //     company_26_company_and_offices(companies);
 // 27. *Wypisz "Nazwa firmy: XYZ, ilość zakupionych telefonów apple: X" dla każdej firmy która kupiła telefon apple. Wypisy powinny być posortowane (na szczycie powinna być firma która kupiła ich najwięcej).
         //     company_27_apple_lovers(companies);
 // 28. Znajdź firme która posiada siedzibę w więcej niż jednym mieście. Posortuj firmy po ilości siedzib, wypisz tylko te które mają więcej niż 1 siedzibę.
@@ -841,20 +841,92 @@ public class Main {
         maxMoneyVsEmployees.ifPresent(System.out::println);
     }
 
-
     // 21. Zwróć firmę która najwięcej wydaje na artykuły biurowe
-    private static void company_21_most_sheeets(List<Company> companies){
+    private static void company_21_most_sheeets(List<Company> companies) {
         System.out.println("Zad.21");
 
-        List<String> officeArticles = Arrays.asList("Pen","Pencil","Clip","Puncher","Paper","Scisors");
+        List<String> officeArticles = Arrays.asList("Pen", "Pencil", "Clip", "Puncher", "Paper", "Scisors");
         Optional<Company> maxOfficeArticlesCompany = companies.stream()
-                .max(Comparator.comparingDouble(comp->comp.getPurchaseList().stream()
-                        .filter(product->officeArticles.contains(product.getProduct().getName()))
-                        .mapToDouble(product-> product.getProduct().getPrice()*product.getQuantity()).sum()
+                .max(Comparator.comparingDouble(comp -> comp.getPurchaseList().stream()
+                        .filter(product -> officeArticles.contains(product.getProduct().getName()))
+                        .mapToDouble(product -> product.getProduct().getPrice() * product.getQuantity())
+                        .sum()
                 ));
         maxOfficeArticlesCompany.ifPresent(System.out::println);
 
     }
+
+    // 22. Zwróć firmy posortowane po ilości wydanych pieniędzy na paliwo--------------------PYTANIE - REVERSED
+    private static void company_22_sort_money(List<Company> companies) {
+        System.out.println("Zad.22");
+        System.out.println("Companies before sorting: \n" + companies);
+        companies.sort(Comparator.comparingDouble(c -> c.getPurchaseList()
+                .stream()
+                .filter(purchase -> purchase.getProduct().getName().contains("Fuel"))
+                .mapToDouble(purchase -> purchase.getProduct().getPrice() * purchase.getQuantity())
+                .sum()
+        ));
+        System.out.println("Companies after sorting: \n" + companies);
+    }
+//_______________ SORTUJE OD NAJMNIEJSZEGO DO NAJWIĘKSZEGO... NIE DA SIĘ ZROBIĆ .reversed() ŻEBY SORTOWAŁO NA ODWRÓT ?_____
+
+    // 23. Zwróć wszystkie produkty które kupione były na kilogramy
+    private static void company_23_wszystkie_produkty_na_kilogramy(List<Company> companies) {
+        System.out.println("Zad.23");
+        Set<Product> kgList = companies.stream()
+                .flatMap(company -> company.getPurchaseList().stream())
+                .filter(purchase -> purchase.getUnit().equals(UNIT.KILOGRAM))
+                .map(Purchase::getProduct)
+                .collect(Collectors.toSet());
+        kgList.forEach(System.out::println);
+    }
+
+    // 24. Zwróć listę zakupów (obiektów purchase) kupionych przez firmy z Detroit w miesiącu lutym. posortuj je po kwocie.
+    private static void company_24_detroit_shopping_in_february(List<Company> companies) {
+
+        System.out.println("Zad. 24");
+        List<Purchase> detroitPurchase = companies.stream()
+                .filter(company -> company.getCityHeadquarters().equals("Detroit"))
+                .flatMap(company -> company.getPurchaseList().stream())
+                .filter(purchase -> purchase.getPurchaseDate().getMonth().getValue() == 2)
+                .sorted(Comparator.comparingDouble(p -> p.getProduct().getPrice() * p.getQuantity()))
+                .collect(Collectors.toList());
+
+        detroitPurchase.forEach(System.out::println);
+    }
+
+    // 25. Zwróć ilość biur które wynajęte były w miesiącu lutym.
+    private static void company_25_rent_in_february(List<Company> companies) {
+        System.out.println("Zad. 25");
+        long officesNumber = companies.stream()
+                .flatMap(c -> c.getPurchaseList().stream())
+                .filter(purchase -> purchase.getProduct().getName().equals("Office rent") &&
+                        purchase.getPurchaseDate().getMonth().getValue() == 2)
+                .count();
+        System.out.println("Number of offices rented in febuary: " + officesNumber);
+    }
+
+    // 26. Zwróć Mapę (Map<Company, Integer>). w mapie umieść wpisy Firma - > ilość biur które wynajęły w dowolnym okresie.
+  /*  private static void company_26_company_and_offices(List<Company> companies) {
+        System.out.println("Zad. 26");
+        Map<Company, Integer> mapOfCompaniesOffices = companies.stream()
+                .collect(Collectors.toMap(
+                        c -> c,
+                        c -> c.getPurchaseList()
+                                .stream()
+                                .filter(purchase -> purchase.getProduct().getName().equals("Office rent")
+                                        && purchase.getPurchaseDate().getMonth().getValue() >= 2
+                                        && purchase.getPurchaseDate().getMonth().getValue() < 10)
+                        ),
+                        (o1, o2) -> o1 + o2
+
+
+                ));
+
+        System.out.println(mapOfCompaniesOffices);
+    }*/
+
+    ;
 
 
     // 27. *Wypisz "Nazwa firmy: XYZ, ilość zakupionych telefonów apple: X"

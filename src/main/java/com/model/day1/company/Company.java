@@ -11,7 +11,9 @@ import java.util.List;
 @AllArgsConstructor
 public class Company {
     private String name; // nazwa firmy
+    @ToString.Exclude
     private String cityHeadquarters; // siedziba firmy
+    @ToString.Exclude
     private int employees; // ilość pracowników
     @ToString.Exclude
     private List<Purchase> purchaseList; // lista zakupów wykonanych przez firmę (co firma kupiła)
